@@ -3,6 +3,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.table import Table
+from config import TARGET_PROJECT_ROOT
 
 from tasks.analyze_models import run_analyze_models
 from tasks.scan_project import run_scan_project
@@ -16,6 +17,8 @@ from tasks.export_relationship_graph_mermaid import run_export_relationship_grap
 from tasks.analyze_domain_graph import run_analyze_domain_graph
 from tasks.analyze_project_structure import run_analyze_project_structure
 from tasks.export_project_structure_mermaid import run_export_project_structure_mermaid
+from tasks.generate_serializer_draft import run_generate_serializer_draft
+from tasks.generate_service_draft import run_generate_service_draft
 
 
 app = typer.Typer(
@@ -394,9 +397,9 @@ def analyze_domain_graph():
 
 @app.command("analyze-project-structure")
 def analyze_project_structure(
-    project: str = typer.Option(..., "--project", "-p", help="新项目根目录"),
+    project: str | None = typer.Option(None, "--project", "-p", help="新项目根目录"),
 ):
-    project_root = Path(project).expanduser().resolve()
+    project_root = Path(project).expanduser().resolve() if project else TARGET_PROJECT_ROOT.resolve()
 
     result, json_path, md_path = run_analyze_project_structure(project_root)
 
@@ -481,6 +484,49 @@ def generate_django6_model_draft(
 
     console.print("[green]Django 6 模型草案生成完成[/green]")
     console.print(f"输出文件: {output_path}")
+    console.print(f"说明文档: {md_path}")
+
+
+@app.command("generate-serializer-draft")
+def generate_serializer_draft(
+    model: str = typer.Option(..., "--model", "-m", help="模型名"),
+):
+    """
+    根据 model draft 生成 serializer 草案
+    """
+
+    console.print(f"[cyan]生成 Serializer Draft: {model}[/cyan]")
+
+    code, path, md_path = run_generate_serializer_draft(
+        model_name=model,
+        agent_root=Path.cwd(),
+        final_mapping_json=Path("reports/db_to_target_mapping_final.json"),
+        project_structure_json=Path("reports/project_structure_graph.json"),
+    )
+
+    console.print("[green]Serializer Draft 生成完成[/green]")
+    console.print(f"代码文件: {path}")
+    console.print(f"说明文档: {md_path}")
+
+
+@app.command("generate-service-draft")
+def generate_service_draft(
+    model: str = typer.Option(..., "--model", "-m", help="模型名"),
+):
+    """
+    根据 model draft / serializer draft 生成 service 草案
+    """
+    console.print(f"[cyan]生成 Service Draft: {model}[/cyan]")
+
+    code, path, md_path = run_generate_service_draft(
+        model_name=model,
+        agent_root=Path.cwd(),
+        final_mapping_json=Path("reports/db_to_target_mapping_final.json"),
+        project_structure_json=Path("reports/project_structure_graph.json"),
+    )
+
+    console.print("[green]Service Draft 生成完成[/green]")
+    console.print(f"代码文件: {path}")
     console.print(f"说明文档: {md_path}")
 
 

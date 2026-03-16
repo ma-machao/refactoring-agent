@@ -7,6 +7,7 @@ from analyzers.reference_selector import ReferenceSelector
 from llm.client import LLMClient
 from tools.json_tools import read_json
 from tools.report_tools import write_markdown_report
+from config import TARGET_PROJECT_ROOT
 
 
 def load_project_rules(agent_root: Path) -> dict[str, Any]:
@@ -58,11 +59,13 @@ def run_generate_django6_model_draft(
     relationship_graph_json = agent_root / "reports" / "relationship_graph.json"
     project_structure_json = agent_root / "reports" / "project_structure_graph.json"
     field_semantics_json = agent_root / "reports" / "field_semantics.json"
+    reference_models_json = agent_root / "workspace" / "reference_models.json"
 
     selector = ReferenceSelector(
-        project_root=agent_root,
+        project_root=TARGET_PROJECT_ROOT,
         relationship_graph_json=relationship_graph_json,
         project_structure_json=project_structure_json,
+        reference_models_json=reference_models_json,
     )
     reference_selection = selector.select_model_references(
         model_name=model_name,
@@ -104,7 +107,7 @@ def run_generate_django6_model_draft(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(code, encoding="utf-8")
 
-    md_path = agent_root / "reports" / f"{model_name.lower()}_model_draft.md"
+    md_path = agent_root / "reports/models" / f"{model_name.lower()}_model_draft.md"
     write_markdown_report(
         md_path,
         build_markdown(

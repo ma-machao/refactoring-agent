@@ -48,3 +48,5 @@ REQUIREMENTS_FILES = {
     "Pipfile",
     "pyproject.toml",
 }
+
+TARGET_PROJECT_ROOT = Path("/Users/machao/Desktop/Projects/re-nexus")

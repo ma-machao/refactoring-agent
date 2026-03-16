@@ -11,10 +11,15 @@ class ReferenceSelector:
         project_root: Path,
         relationship_graph_json: Path,
         project_structure_json: Path,
+        reference_models_json: Path | None = None,
     ):
         self.project_root = project_root
         self.graph = self._safe_read_json(relationship_graph_json)
         self.structure = self._safe_read_json(project_structure_json)
+        self.reference_models = self._safe_read_json(reference_models_json) if reference_models_json else {}
+
+        self._whitelist_paths = self._build_whitelist_path_set()
+        self._core_whitelist_paths = set(self.reference_models.get("core", []))
 
     def select_model_references(
         self,
@@ -27,33 +32,47 @@ class ReferenceSelector:
 
         candidates: list[dict[str, Any]] = []
 
+        # 1. 图驱动：当前模型 + 直接相关模型
         for related_model in related_models:
             model_file = self._find_model_file(related_model)
             if not model_file:
                 continue
 
-            abs_path = self.project_root / model_file
-            if not abs_path.exists():
-                continue
-
-            try:
-                content = read_text(abs_path, encoding="utf-8")[:max_chars_per_file]
-            except Exception:
-                continue
-
-            candidates.append(
-                {
-                    "model": related_model,
-                    "path": model_file,
-                    "content": content,
-                    "score": self._score_candidate(
-                        model_name=model_name,
-                        related_model=related_model,
-                        path=model_file,
-                        target_app=target_app,
-                    ),
-                }
+            candidate = self._build_candidate(
+                model_name=model_name,
+                related_model=related_model,
+                model_file=model_file,
+                target_app=target_app,
+                max_chars_per_file=max_chars_per_file,
             )
+            if candidate:
+                candidates.append(candidate)
+
+        # 2. 白名单增强：core 永远值得参考
+        for model_file in sorted(self._core_whitelist_paths):
+            candidate = self._build_candidate(
+                model_name=model_name,
+                related_model=self._infer_model_name_from_path(model_file),
+                model_file=model_file,
+                target_app=target_app,
+                max_chars_per_file=max_chars_per_file,
+                force_bonus=120,
+            )
+            if candidate:
+                candidates.append(candidate)
+
+        # 3. 白名单增强：target_app 对应的参考文件
+        for model_file in sorted(self.reference_models.get(target_app, [])):
+            candidate = self._build_candidate(
+                model_name=model_name,
+                related_model=self._infer_model_name_from_path(model_file),
+                model_file=model_file,
+                target_app=target_app,
+                max_chars_per_file=max_chars_per_file,
+                force_bonus=100,
+            )
+            if candidate:
+                candidates.append(candidate)
 
         # 去重：同 path 只保留最高分
         dedup: dict[str, dict[str, Any]] = {}
@@ -84,10 +103,50 @@ class ReferenceSelector:
     # internal
     # -------------------------
 
-    def _safe_read_json(self, path: Path) -> dict[str, Any]:
-        if not path.exists():
+    def _safe_read_json(self, path: Path | None) -> dict[str, Any]:
+        if path is None or not path.exists():
             return {}
         return read_json(path)
+
+    def _build_whitelist_path_set(self) -> set[str]:
+        paths: set[str] = set()
+        for _, items in self.reference_models.items():
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if isinstance(item, str):
+                    paths.add(item)
+        return paths
+
+    def _build_candidate(
+        self,
+        model_name: str,
+        related_model: str,
+        model_file: str,
+        target_app: str,
+        max_chars_per_file: int,
+        force_bonus: int = 0,
+    ) -> dict[str, Any] | None:
+        abs_path = self.project_root / model_file
+        if not abs_path.exists():
+            return None
+
+        try:
+            content = read_text(abs_path, encoding="utf-8")[:max_chars_per_file]
+        except Exception:
+            return None
+
+        return {
+            "model": related_model,
+            "path": model_file,
+            "content": content,
+            "score": self._score_candidate(
+                model_name=model_name,
+                related_model=related_model,
+                path=model_file,
+                target_app=target_app,
+            ) + force_bonus,
+        }
 
     def _find_related_models(self, model_name: str) -> list[str]:
         """
@@ -179,12 +238,25 @@ class ReferenceSelector:
         if "/models/" in path:
             score += 20
 
+        # 白名单文件额外加分
+        if path in self._whitelist_paths:
+            score += 80
+
+        # core 白名单再加一层分，几乎每次都值得参考
+        if path in self._core_whitelist_paths:
+            score += 40
+
         # 某些基础模型适度加分
         lower_model = related_model.lower()
         if lower_model in {"customer", "admin", "image", "physical_server", "ipaddress"}:
             score += 10
 
         return score
+
+    def _infer_model_name_from_path(self, path: str) -> str:
+        file_name = Path(path).stem
+        parts = file_name.split("_")
+        return "".join(part.capitalize() for part in parts)
 
     def _snake(self, name: str) -> str:
         chars: list[str] = []

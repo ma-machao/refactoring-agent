@@ -1,0 +1,32 @@
+{
+  "core": [
+    "apps/core/models/admin.py",
+    "apps/core/models/customer.py"
+  ],
+  "asset": [
+    "apps/asset/models/region.py",
+    "apps/asset/models/datacenter.py",
+    "apps/asset/models/rack.py",
+    "apps/asset/models/rack_device.py",
+    "apps/asset/models/room.py",
+    "apps/asset/models/cluster.py",
+    "apps/asset/models/switch.py",
+    "apps/asset/models/physical_server.py",
+    "apps/asset/models/scheduler_label.py"
+  ],
+  "network": [
+    "apps/network/models/ipaddress.py",
+    "apps/network/models/ippool.py",
+    "apps/network/models/network_type.py"
+  ],
+  "compute": [
+    "apps/compute/models/image.py"
+  ],
+  "storage": [
+    "apps/storage/models/storage.py"
+  ],
+  "ops": [
+    "apps/ops/models/server_role.py",
+    "apps/ops/models/configuration.py"
+  ]
+}
