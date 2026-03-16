@@ -1,0 +1,102 @@
+{
+  "apps": {
+    "asset": {
+      "domains": [
+        "region",
+        "data_center",
+        "room",
+        "rack",
+        "rack_device",
+        "physical_server",
+        "cluster",
+        "switch",
+        "scheduler_labels",
+        "line",
+        "cluster_group",
+        "gpu",
+        "ib"
+      ]
+    },
+    "network": {
+      "domains": [
+        "ipaddress",
+        "ippool",
+        "network_type",
+        "network",
+        "network_interface",
+        "uplink",
+        "router",
+        "router_network_interface",
+        "sdnippool",
+        "sdnippool_address",
+        "load_balancer",
+        "load_balancer_backend",
+        "load_balancer_network_interface",
+        "direct_link",
+        "security_group",
+        "pem_certificate"
+      ]
+    },
+    "storage": {
+      "domains": [
+        "storage",
+        "backup",
+        "cloud_volume",
+        "snapshot"
+      ]
+    },
+    "compute": {
+      "domains": [
+        "image",
+        "virtual_server",
+        "virtual_server_params",
+        "ssh_public_key"
+      ]
+    },
+    "ops": {
+      "domains": [
+        "server_role",
+        "configuration",
+        "system_status"
+      ]
+    },
+    "core": {
+      "domains": [
+        "admin",
+        "customer",
+        "refresh_session",
+        "auth",
+        "group",
+        "permission",
+        "token"
+      ]
+    },
+    "database": {
+      "domains": [
+        "database",
+        "database_image",
+        "database_snapshot",
+        "database_network_interface"
+      ]
+    },
+    "audit": {
+      "domains": [
+        "action_log",
+        "virtual_server_log"
+      ]
+    },
+    "event": {
+      "domains": [
+        "image_job",
+        "network_job",
+        "cloud_volume_job",
+        "job"
+      ]
+    },
+    "billing": {
+      "domains": [
+        "charge"
+      ]
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "identity_models": {
+    "auth_user_model": "auth.User",
+    "admin_profile_model": "core.Admin",
+    "customer_model": "core.Customer"
+  },
+
+  "legacy_identity_mapping": {
+    "legacy_admin_user": {
+      "model_names": ["User"],
+      "module_hints": [
+        "django.contrib.auth",
+        "auth"
+      ],
+      "db_table_hints": [
+        "auth_user"
+      ],
+      "new_model": "auth.User",
+      "meaning": "管理员登录主体"
+    },
+
+    "legacy_customer_user": {
+      "model_names": ["User"],
+      "module_hints": [
+        "db"
+      ],
+      "db_table_hints": [
+        "db_user"
+      ],
+      "new_model": "core.Customer",
+      "meaning": "客户业务主体"
+    }
+  },
+
+  "field_semantic_rules": {
+    "operator": "auth.User",
+    "creator": "auth.User",
+    "created_by": "auth.User",
+    "updated_by": "auth.User",
+
+    "customer": "core.Customer",
+    "owner_customer": "core.Customer",
+    "billing_customer": "core.Customer"
+  },
+
+  "rename_rules": {
+    "resource_owner_fields": {
+      "user": "customer"
+    }
+  },
+
+  "rules": [
+    "旧项目中有两种 User：auth_user 和 db_user。",
+    "auth_user 表示管理员登录主体。",
+    "db_user 表示客户业务主体。",
+    "新项目中 auth.User 仍然是登录主体。",
+    "新项目中 core.Customer 是客户主体。",
+    "旧模型如果来源于 db 模块且类名为 User，或表名为 db_user，应视为客户主体。",
+    "这种关系在新项目中优先迁移为 core.Customer。",
+    "如果旧字段名为 user 且语义是资源归属客户，可以重命名为 customer。",
+    "只有在字段明确表示操作者、创建人、更新人时，才优先使用 auth.User。",
+    "跨 app 外键必须使用字符串形式 'app_label.ModelName'。",
+    "不需要延用旧项目中表 db_ 开头的命名规则，使用新项目的即可。"
+  ]
+}
