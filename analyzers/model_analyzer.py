@@ -143,7 +143,9 @@ class ModelAnalyzer:
             if not fields:
                 continue
 
-            referenced_constants = self._collect_referenced_constants(fields, available_constants)
+            #  referenced_constants = self._collect_referenced_constants(fields, available_constants)
+            referenced_constants = available_constants
+            constants=available_constants
 
             models.append(
                 ModelInfo(
@@ -358,7 +360,6 @@ class ModelAnalyzer:
                 if not name.isupper():
                     continue
                 constants[name] = self._literal_eval_safe(stmt.value)
-        print(constants)
         return constants
 
     def _load_constants_from_file(self, file_path: Path, project_root: Path) -> dict[str, Any]:

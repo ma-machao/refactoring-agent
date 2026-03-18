@@ -19,6 +19,11 @@ from tasks.analyze_project_structure import run_analyze_project_structure
 from tasks.export_project_structure_mermaid import run_export_project_structure_mermaid
 from tasks.generate_serializer_draft import run_generate_serializer_draft
 from tasks.generate_service_draft import run_generate_service_draft
+from tasks.analyze_enums import run_analyze_enums
+from tasks.generate_view_draft import run_generate_view_draft
+from tasks.generate_url_draft import run_generate_url_draft
+
+from tasks.analyze_action_flows import run_analyze_action_flows
 
 
 app = typer.Typer(
@@ -408,6 +413,18 @@ def analyze_project_structure(
     console.print(f"Markdown: {md_path}")
 
 
+@app.command("analyze-enums")
+def analyze_enums():
+    result, json_path, md_path = run_analyze_enums(
+        db_models_analysis_json=Path("reports/db_models_analysis.json"),
+        field_semantics_json=Path("reports/field_semantics.json"),
+    )
+
+    console.print("[green]Enum 分析完成[/green]")
+    console.print(f"JSON: {json_path}")
+    console.print(f"Markdown: {md_path}")
+
+
 @app.command("export-project-structure-mermaid")
 def export_project_structure_mermaid():
     structure_json = Path("reports/project_structure_graph.json")
@@ -421,6 +438,8 @@ def export_project_structure_mermaid():
     console.print("[green]Project Structure Mermaid 完成[/green]")
     console.print(path)
 
+
+# ------------- 大模型生成数据 -------------
 
 @app.command("generate-django6-model-draft")
 def generate_django6_model_draft(
@@ -529,6 +548,69 @@ def generate_service_draft(
     console.print(f"代码文件: {path}")
     console.print(f"说明文档: {md_path}")
 
+
+@app.command("generate-view-draft")
+def generate_view_draft(
+    model: str = typer.Option(..., "--model", "-m", help="模型名称"),
+):
+    """
+    为指定模型生成 Django6 admin CRUD views 草稿
+    """
+
+    console.print(f"[cyan]开始生成 View Draft: {model}[/cyan]")
+
+    code, view_path, md_path = run_generate_view_draft(
+        model_name=model,
+        agent_root=Path.cwd(),
+        final_mapping_json=Path("reports/db_to_target_mapping_final.json"),
+        project_structure_json=Path("reports/project_structure_graph.json"),
+    )
+
+    console.print("[green]View Draft 生成完成[/green]")
+    console.print(f"输出文件: {view_path}")
+    console.print(f"报告文件: {md_path}")
+
+
+@app.command("generate-url-draft")
+def generate_url_draft(
+    model: str = typer.Option(..., "--model", "-m", help="模型名称"),
+):
+    """
+    为指定模型生成 admin URL 草案
+    """
+
+    console.print(f"[cyan]开始生成 URL Draft: {model}[/cyan]")
+
+    code, url_path, md_path = run_generate_url_draft(
+        model_name=model,
+        agent_root=Path.cwd(),
+        final_mapping_json=Path("reports/db_to_target_mapping_final.json"),
+    )
+
+    console.print("[green]URL Draft 生成完成[/green]")
+    console.print(f"输出文件: {url_path}")
+    console.print(f"报告文件: {md_path}")
+
+
+
+# -------------------- 业务分析 ----------------
+
+
+@app.command("analyze-action-flows")
+def analyze_action_flows(
+    project: str = typer.Option(..., "--project", "-p"),
+    model: str = typer.Option(..., "--model", "-m"),
+):
+    project_root = Path(project).expanduser().resolve()
+
+    result, json_path, md_path = run_analyze_action_flows(
+        project_root=project_root,
+        model_name=model,
+    )
+
+    console.print("[green]Action Flow 分析完成[/green]")
+    console.print(json_path)
+    console.print(md_path)
 
 if __name__ == "__main__":
     app()

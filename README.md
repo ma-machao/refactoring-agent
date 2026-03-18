@@ -94,13 +94,15 @@
 | 4  | llm-review-db-mapping             | `python main.py llm-review-db-mapping --target workspace/target_blueprint.json`                                                                             | 使用大模型复核第3步生成的模型映射是否合理                                                        | `reports/db_to_target_mapping_review.json` |
 | 5  | merge-final-mapping               | `python main.py merge-final-mapping`                                                                                                                        | 合并规则映射和 LLM 复核结果，生成最终模型映射                                                    | `reports/db_to_target_mapping_final.json`  |
 | 6  | analyze-semantics                 | `python main.py analyze-semantics`                                                                                                                          | 分析模型字段语义（如 user → customer），解决语义歧义                                           | `reports/field_semantics.json`             |
-| 7  | analyze-relationship-graph        | `python main.py analyze-relationship-graph`                                                                                                                 | 构建 legacy 模型关系图（ForeignKey、ManyToMany 等）                                     | `reports/relationship_graph.json`          |
-| 8  | export-relationship-graph-mermaid | `python main.py export-relationship-graph-mermaid`                                                                                                          | 将模型关系图导出为 Mermaid 图                                                          | `reports/relationship_graph.mmd`           |
-| 9  | analyze-domain-graph              | `python main.py analyze-domain-graph`                                                                                                                       | 根据关系图生成领域结构图（domain graph）                                                   | `reports/domain_graph.json`                |
-| 10 | analyze-project-structure         | `python main.py analyze-project-structure -p /Users/xxx/Desktop/Projects/re-nexus`                                                                          | 分析新项目代码结构（apps / models / serializers / services 等）                          | `reports/project_structure_graph.json`     |
-| 11 | export-project-structure-mermaid  | `python main.py export-project-structure-mermaid`                                                                                                           | 将项目结构图导出为 Mermaid 图                                                          | `reports/project_structure_graph.mmd`      |
-| 12 | generate-django6-model-draft      | `python main.py generate-django6-model-draft --project /Users/xxx/Desktop/Projects/nexus --model VirtualServer --target workspace/target_blueprint.json` | 根据前面所有分析结果，为指定 legacy 模型生成 Django6 新架构模型草案                                   | `workspace/drafts/apps/.../models/*.py`    |
-
+|7|analyze-enums|`python main.py analyze-enums`|分析model中枚举字段|reports/enum_analysis.json|
+| 8  | analyze-relationship-graph        | `python main.py analyze-relationship-graph`                                                                                                                 | 构建 legacy 模型关系图（ForeignKey、ManyToMany 等）                                     | `reports/relationship_graph.json`          |
+| 9  | export-relationship-graph-mermaid | `python main.py export-relationship-graph-mermaid`                                                                                                          | 将模型关系图导出为 Mermaid 图                                                          | `reports/relationship_graph.mmd`           |
+| 10  | analyze-domain-graph              | `python main.py analyze-domain-graph`                                                                                                                       | 根据关系图生成领域结构图（domain graph）                                                   | `reports/domain_graph.json`                |
+| 11 | analyze-project-structure         | `python main.py analyze-project-structure -p /Users/xxx/Desktop/Projects/re-nexus`                                                                          | 分析新项目代码结构（apps / models / serializers / services 等）                          | `reports/project_structure_graph.json`     |
+| 12 | export-project-structure-mermaid  | `python main.py export-project-structure-mermaid`                                                                                                           | 将项目结构图导出为 Mermaid 图                                                          | `reports/project_structure_graph.mmd`      |
+| 13 | generate-django6-model-draft      | `python main.py generate-django6-model-draft --project /Users/xxx/Desktop/Projects/nexus --model VirtualServer --target workspace/target_blueprint.json` | 根据前面所有分析结果，为指定 legacy 模型生成 Django6 新架构模型草案                                   | `workspace/drafts/apps/.../models/*.py`    |
+|14|generate-serializer-draft|`python main.py generate-serializer-draft --model SSHPublicKey`|给新model生成 serializers|`workspace/drafts/apps/.../serializers/*.py`|
+|15|generate-view-draft|`python main.py generate-view-draft \     ~/Desktop/Projects/refactoring-agent -m VirtualServer`|给新 serializers生成 view|`workspace/drafts/apps/.../vies/*.py`|
 
 # 目文件说明
 
@@ -115,6 +117,7 @@
 | `analyzers/project_structure_analyzer.py`    | 扫描新项目 `apps/` 目录，分析真实工程结构，用于后续参考代码选择。 |
 | `analyzers/reference_selector.py`            | 为当前要生成的模型自动挑选最相关的新项目参考代码。 |
 | `analyzers/relationship_graph_analyzer.py`   | 基于模型字段关系构建模型关系图，输出关系边和节点。   |
+|`analyzers/action_flow_analyzer.py`|分析业务行为|
 | `tasks/analyze_domain_graph.py`              | 调用 `domain_graph_analyzer`，生成 domain graph 报告。|
 | `tasks/analyze_models.py`                    | 调用 `model_analyzer`，生成模型分析报告。|
 | `tasks/analyze_project_structure.py`         | 调用 `project_structure_analyzer`，生成新项目结构报告。|
@@ -127,6 +130,9 @@
 | `tasks/map_db_to_target.py`                  | 执行规则映射，把 legacy `db` 模型映射到新架构。|
 | `tasks/merge_final_mapping.py`               | 合并规则映射和 LLM 复核结果，生成最终映射文件。|
 | `tasks/scan_project.py`                      | 调用 `project_scanner`，生成项目扫描报告。 |
+|`tasks/generate_view_draft.py`|生成views|
+|`tasks/generate_serializer_draft.py`|生成 serializers|
+|`tasks/analyze_action_flows.py`|生成业务流数据|
 | `llm/client.py`                              | 大模型客户端封装，负责调用 OpenAI / Claude 等接口并返回结果。|
 | `tools/fs_tools.py`                          | 文件系统工具函数，如读写文本、路径处理等。   |
 | `tools/json_tools.py`                        | JSON 读写工具函数。 |
@@ -139,3 +145,20 @@
 | `main.py`                                    | CLI 入口文件，统一注册并调度所有命令。     |
 | `README.md`                                  | 项目说明文档，介绍用途、命令、流程和使用方法。|
 | `requirements.txt`                           | Python 依赖列表。         |
+
+
+
+
+
+python main.py analyze-models \
+  -p /Users/machao/Desktop/Projects/nexus
+
+python main.py map-db-to-target \
+  -p /Users/machao/Desktop/Projects/nexus \
+  --target workspace/target_blueprint.json
+
+python main.py merge-final-mapping
+
+python main.py analyze-semantics
+
+python main.py analyze-relationship-graph

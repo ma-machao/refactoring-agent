@@ -40,6 +40,10 @@ def extract_model_relationships(relationship_graph: dict[str, Any], model_name: 
     return results
 
 
+def extract_model_enums(enum_analysis: dict[str, Any], model_name: str) -> list[dict[str, Any]]:
+    return [item for item in enum_analysis.get("enums", []) if item.get("model") == model_name]
+
+
 def run_generate_django6_model_draft(
     model_name: str,
     legacy_project_root: Path,
@@ -60,6 +64,10 @@ def run_generate_django6_model_draft(
     project_structure_json = agent_root / "reports" / "project_structure_graph.json"
     field_semantics_json = agent_root / "reports" / "field_semantics.json"
     reference_models_json = agent_root / "workspace" / "reference_models.json"
+    enum_analysis_json = agent_root / "reports" / "enum_analysis.json"
+
+    enum_analysis = load_optional_json(enum_analysis_json)
+    model_enums = extract_model_enums(enum_analysis, model_name)
 
     selector = ReferenceSelector(
         project_root=TARGET_PROJECT_ROOT,
@@ -88,6 +96,7 @@ def run_generate_django6_model_draft(
         project_rules=project_rules,
         model_relationships=model_relationships,
         model_field_semantics=model_field_semantics,
+        model_enums=model_enums,
     )
 
     raw = llm.complete(
@@ -176,6 +185,7 @@ def build_user_prompt(
     project_rules: dict[str, Any],
     model_relationships: list[dict[str, Any]],
     model_field_semantics: list[dict[str, Any]],
+    model_enums: list[dict[str, Any]],
 ) -> str:
     return f"""
 下面是某个 legacy 模型的完整上下文包，以及新项目中自动挑选的参考样本文件。
